@@ -1,14 +1,14 @@
 const s = require('shelljs');
-
+const path = require('path');
+console.log(__dirname);
 const message = s.exec('git log -1 --pretty=%B', { silent: true }).stdout.trim();
-s.cd('..');
+s.cd(path.join(__dirname, '..'));
 s.exec('git clone git@github.com:tiagolisalves/tiagolisalves.github.io.git');
 s.cd(__dirname);
 s.exec('npm run build');
-s.mv('dist/*', '../tiagolisalves.github.io');
-s.cd('../tiagolisalves.github.io');
+s.mv(path.join(__dirname, 'dist/*'), '../tiagolisalves.github.io');
+s.cd(path.join(__dirname, '../tiagolisalves.github.io'));
 s.exec('git add -A');
 s.exec(`git commit -m "${message}"`);
 s.exec('git push origin master');
-s.cd(__dirname);
-s.rm('-rf', '../tiagolisalves.github.io');
+s.rm('-rf', path.join(__dirname, '../tiagolisalves.github.io'));
