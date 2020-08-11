@@ -1,0 +1,395 @@
+= {title}
+Tiago L. Alves <tiagolisalves@gmail.com>
+:revdate: 1577840017520
+:title: How to get content between html tags with non-greedy regex operators
+:subtitle: A regex exercise: Suppose that you want get the content between html tags, basically the equivalent result returned by the https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML[Element.innerHtml] function. How you could accomplish this using only Regex?
+
+{subtitle}
+
+== The simplest case: An unique occurrence of a tag
+
+
+.What is good to know before you start!
+****
+Some basic knowledge of Regex is necessary to follow this exercise. You could learn about it from the excellent https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions[MDN Regex guide!]
+****
+
+Imagine that we have some file with the following content: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+<!doctype html>
+<html>
+<head>
+  <title>HTML Test</title>
+</head>
+<body>
+  <h1>How many oranges are there in the box?</h1>
+  <box>There are two oranges in the box</box>
+</body>
+</html>
+  </xmp>
+</pre>
+++++
+
+
+And imagine too that we are asked to get the content between the `<box>` tags. We could use third-party HTML parser's like JSDOM, but this won't be the content of this post. Let's get started!
+
+To accomplish this initial task we could use the method `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/match[String.prototype.match]`, which receives a Regex in the first argument. To make a Regex we could use the `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp[RegExp]` global object or we could use the literal expression which consists to put the characters between 2 separated slashes like for example `/<box>/`. We will use the second as I think it's more concise for this use case. We will split the final regex on 3 parts to ease the understanding.  
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+console.log(appHtml.match(/\<box\>/)) 
+// 1. Matches: ['<box>']
+console.log(appHtml.match(/\<box\>.+/)) 
+// 2. Matches: ['<box>There are two oranges in the box']
+console.log(appHtml.match(/\<box\>.+\<\/box\>/)) 
+// 3. Matches: ['<box>There are two oranges in the box</box>']
+</xmp>
+</pre>
+++++
+
+We got the entire match including the tags. How we could get rid of the tags? There are two ways. 
+
+One which I think it's dumb and consists basically on replacing the tags with `String.prototype.replace` and could be used just for testing/debugging. Like:
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+const result = appHtml
+  .match(/\<box\>.+\<\/box\>/)
+  .replace('<box>', '')
+  .replace('<\box>', '');
+console.log(result);  
+// Result - 'There are two oranges in the box'
+</xmp>
+</pre>
+++++
+
+The other way is to use capturing groups. The difference between the first and the second is that the first is a workaround. The second is the built-in way of capture parts of a text using Regex. A capturing group is represented by `()`. Let's put it in code: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+const result = appHtml.match(/\<box\>(.+)\<\/box\>/)
+console.log(result);
+/*
+Result: [   
+  '<box>There are two oranges in the box</box>',
+  'There are two oranges in the box', 
+....]
+ */
+</xmp>
+</pre>
+++++
+
+As you can see, the first is the entire match, the second match, which is our desired result, represents only the text matched with `(.+)`.
+
+A capturing group means practically that when you use it, the result of the expression between `()` will be placed separated from the entire match. Like the documentation says, it remember the match.  
+
+For one occurrence of a tag within a HTML file, we have the final code:
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+const result = appHtml.match(/\<box\>(.+)\<\/box\>/)[1];
+console.log(result);
+// Result: 'There are two oranges in the box'
+</xmp>
+</pre>
+++++
+
+== More fun: Multiple occurrences of a tag
+
+Only to simplify, we will have two occurrences of the tag on the HTML file. But the final code should work for any number of occurrences as well. Let's apply our regex from last section to the code bellow to see what happens.    
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+<!doctype html>
+<html>
+<head>
+  <title>HTML Test</title>
+</head>
+<body>
+  <h1>How many oranges are there in the box?</h1>
+  <box>There are two oranges in the box</box>
+  <box>There are two apples in the box</box>
+</body>
+</html>
+  </xmp>
+</pre>
+++++
+
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+console.log(appHtml.match(/\<box\>(.+)\<\/box\>/)[1]) 
+//Result: 'There are two oranges in the box'
+</xmp>
+</pre>
+++++
+
+As we can see, the result is the same before. Why? The reason is that our regex doesn't work for more than one match. To make a regex works on multiple matches we need the global modifier which is represented by the `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/global[g]`: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+...
+console.log(appHtml.match(/\<box\>(.+)\<\/box\>/g)) 
+/*
+Result: [
+  '<box>There are two oranges in the box</box>',
+  '<box>There are two apples in the box</box>'
+]
+*/
+</xmp>
+</pre>
+++++
+
+
+
+Strange enough, the capturing groups didn't make any effect on the final result. As we can see on the docs, the `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/match[String.prototype.match]` method will match only the entire Regex when using the global `g` flag. 
+
+We'll have to use the `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec[RegExp.prototype.exec]` method to capture groups in multiple matches. The RegExp is stateful when used with the global flag, which means that the matches are returned one by one per execution:
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+const regex = /\<box\>(.+)\<\/box\>/g
+
+console.log((regex.exec(appHtml)[1])); 
+// Result: There are two oranges in the box
+console.log((regex.exec(appHtml)[1])); 
+// Result: There are two apples in the box
+console.log((regex.exec(appHtml))); 
+// Result: null
+</xmp>
+</pre>
+++++
+
+We want to print out an unknown number of matches, we can print each execution of the `exec` method on a `while` loop, and when the last result is null, the loop stops because null is evaluated to false:
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+const regex = /\<box\>(.+)\<\/box\>/g
+
+let matches;
+while ((matches = regex.exec(appHtml))) {
+  matches.push(matches[1])
+}
+console.log(matches); 
+/*
+Result: [
+  'There are two oranges in the box', 
+  'There are two apples in the box'
+]
+ */
+</xmp>
+</pre>
+++++
+
+== Even more fun : Matching multiple occurrences with any length of content 
+
+If we try to match content with line-breaks our still not so powerful regex won't work:
+++++
+<pre class="prettyprint linenums">
+<xmp>
+<!doctype html>
+<html>
+<head>
+  <title>HTML Test</title>
+</head>
+<body>
+
+  <h1>How many fruits are there in each box?</h1>
+  <box>
+  There are two oranges 
+
+  and
+
+  three eggplants
+
+  </box>
+  <box>
+  There are four apples 
+
+  and six cinammon rolls  
+  </box>
+</body>
+</html>
+  </xmp>
+</pre>
+++++
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+
+const regex = /\<box\>(.+)\<\/box\>/g
+
+const matches;
+while ((matches = regex.exec(appHtml))) {
+  matches.push(matches[1])
+}
+console.log(matches); 
+//Result: null
+</xmp>
+</pre>
+++++
+
+
+What happens here is that the  character `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Character_Classes[.]` doesn't match line breaks. In ES2018 spec we have the flag `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/dotAll[/s]` that make the `.` operator match line breaks too. But we're going to cover a technique that it's compatible with the ES5 spec. 
+
+We have 2 operators to work on that, we have `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Character_Classes[\s]` that matches white-space and we have `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Character_Classes[\S]` that matches any character that is not white space, including line breaks. All we have to do is to replace the `.` operator for an expression to select `\s` or `\S`, and we represent this with the character set `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Groups_and_Ranges[[++]++]`. This will make our regex match `\s` or `\S`: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+
+const regex = /\<box\>([\s\S]+)\<\/box>/g;
+
+let result = [],
+  matches;
+while ((matches = regex.exec(appHtml))) {
+  result.push(matches[1]);
+}
+console.log(result[1]); /*
+    Result: 
+    There are two oranges 
+
+    and
+
+    three eggplants
+
+    </box>
+    <box>
+    There are four apples 
+
+    and six cinammon rolls
+*/
+</xmp>
+</pre>
+++++
+
+As we can see it's matching multiple lines, but it's not right yet. Now, the expression is matching only one possibility until the last occurrence of `</box>`, and this makes some sense because `\s\S` or `.` matches `</box>` too. We have to make it stop at first match, handling the greediness of `\s\S`. For this we can use the non-greedy quantifier `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Quantifiers[?]`:
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+
+const regex = /\<box\>([\s\S]+?)\<\/box>/g;
+
+let result = [],
+  matches;
+while ((matches = regex.exec(appHtml))) {
+  result.push(matches[1]);
+}
+console.log(result); /*
+    Result: 
+    [There are two oranges 
+
+    and
+
+    three eggplants
+
+    ,
+    
+    There are four apples 
+
+    and six cinammon rolls]
+*/
+</xmp>
+</pre>
+++++
+
+We now have a parser for our box tags. But how we could make a parser for generic tag names? 
+
+== Getting serious : Parsing content from generic tags
+
+We've talked about the 2 ways to represent a regular expression. We've used the literal approach in this tutorial. But as you could eventually try to use it with variables, and have some headache after you happen to know that it's not possible, it's important to know the other way. We will use now the constructor function of the object `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp[RegExp]`. 
+
+First we need be careful to not change the result of our last program, so we will create the equivalent regular expression with the RegExp object. The most important difference is that the expression is now a `string`: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+
+const regex = new RegExp(`\\<box\\>([\\s\\S]+?)\\<\\/box>`, 'g');
+
+let result = [],
+  matches;
+while ((matches = regex.exec(appHtml))) {
+  result.push(matches[1]);
+}
+console.log(result); /*
+    Result: 
+    [There are two oranges 
+
+    and
+
+    three eggplants
+
+    ,
+    
+    There are four apples 
+
+    and six cinammon rolls]
+*/
+</xmp>
+</pre>
+++++
+
+As you can see, we had to escape twice the characters, because we need to have the slash characters in the evaluated string. If we had put only one escape character like `\<\/box\>`, this would be evaluated to `</box>`, losing the '\' characters which is essential for the regular expression proper functioning.  
+
+To finish it up, let's create a function `innerHTML` to wrap our working code: 
+
+++++
+<pre class="prettyprint linenums">
+<xmp>
+
+const innerHTML = tagName => {
+  const regex = new RegExp(`\\<${tagName}\\>([\\s\\S]+?)\\<\\/${tagName}>`, 'g');
+
+  let result = [],
+    matches;
+  while ((matches = regex.exec(appHtml))) {
+    result.push(matches[1]);
+  }
+  return result;
+};
+
+console.log(innerHTML('box')); /*
+    Result: 
+    [There are two oranges 
+
+    and
+
+    three eggplants
+
+    ,
+    
+    There are four apples 
+
+    and six cinammon rolls]
+*/
+</xmp>
+</pre>
+++++
+
+We replaced the two occurrences of `box` with the parameter `tagName`. We used https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals[template strings] to be more concise too. That's it! We have now a parser for simple tags! 
+
+== Conclusion
+
+How you could see, we solved the problem incrementally, if you make use of these methods often they will come faster to you mind allowing you to productively create more robust programs if you want! 
+
+You could go even further with this parser creating ways of: 
+
+* Select tags with some id.
+* Get content within tags with a specific class.
+* Replace an entire tag with another. 
+* Etc. 

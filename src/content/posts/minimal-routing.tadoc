@@ -1,0 +1,28 @@
+= {title}
+Tiago L. Alves <tiagolisalves@gmail.com>
+:revdate: 1577840017520
+:title: Creating a very minimal routing using vanillaJS
+:subtitle: When we start to create a single page application we generally rely on a JS framework paired with some routing library. It has a faster setup letting us to focus on the important parts of our applications. But if we were worried about the load time of our app, could we create a routing mechanism using the native api easily? I would say with a loudy voice, yes!  
+
+{subtitle}
+
+== What is a SPA? 
+
+It's important to define briefly what is a SPA, which stands for single page application. It's      
+
+== The idea
+
+
+
+We have an event called 'hashchange'. 
+
+We could add an event listener like this:
+
+.app.js
+[source,javascript]
+----
+    window.addEventListener('hashchange', this.changeContent.bind(this), false);
+
+----
+
+== Implementing a router listener
