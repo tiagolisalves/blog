@@ -1,6 +1,6 @@
 const s = require('shelljs');
 const path = require('path');
-console.log(__dirname);
+console.log(__dirname, __filename);
 const message = s.exec('git log -1 --pretty=%B', { silent: true }).stdout.trim();
 s.cd(path.join(__dirname, '..'));
 s.exec('git clone git@github.com:tiagolisalves/tiagolisalves.github.io.git');
