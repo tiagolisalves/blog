@@ -1,6 +1,6 @@
 {
   "name": "tiagolisalves-blog",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "tiagolisalves's blog about software development",
   "main": "index.js",
   "scripts": {
